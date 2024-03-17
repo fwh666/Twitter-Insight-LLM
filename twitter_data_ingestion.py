@@ -12,12 +12,97 @@ import pandas as pd
 from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 import logging
 from config import TWITTER_AUTH_TOKEN
-
+import os
+from notion_client import Client
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+class NotionClient:
+    def __init__(self):
+        """
+        初始化
+        """
+        global global_query_results
+        global global_notion
+        global global_database_id
+        global_token = "secret_SGSgYlUHk8knQRLcwJr1alzjzVTwXFwrr0UDBawy0Sw"
+        global_database_id = "294cc39bf0424a5ca79de50d76e2f6e1"
+        global_notion = Client(auth=global_token)
+        global_query_results = global_notion.databases.query(database_id=global_database_id)
+        print('Notion初始化...')
+    """
+    创建新的页面
+    1. 属性名字和字段个数要对应上
+    2. 不同的属性用不同的构参方式
+    """
+    def create_page(self, page):
+        new_page = global_notion.pages.create(
+            parent={
+                'database_id': global_database_id
+            },
+            properties={
+                'Name': {
+                    'title': [
+                        {
+                            'text': {
+                                'content': 'title'
+                            }
+                        }
+                    ]
+                },
+                '正文内容': {
+                    'rich_text': [
+                        {
+                            'text': {
+                                'content': page['text']
+                            }
+                        }
+                    ]
+                },
+                '昵称new': {
+                    'rich_text': [
+                        {
+                            'text': {
+                                'content': page['author_name']
+                            }
+                        }
+                    ]
+                },
+                "点赞数": {
+                    "number": page['num_like']
+                },
+                "评论数": {
+                    "number": page['num_reply']
+                },
+                "转发数": {
+                    "number": page['num_retweet']
+                },
+                '发布人': {
+                    'rich_text': [
+                        {
+                            'text': {
+                                'content': page['author_handle']
+                            }
+                        }
+                    ]
+                },
+                "正文地址URL": {
+                    'url': page['url']
+                },
+                "原始URL": {
+                    'url': page['url']
+                },
+                "发布时间": {
+                    "date": {
+                        "start": page['date'],
+                    }
+                }
+            }
+        )
+        return new_page
+
 
 
 class TwitterExtractor:
@@ -28,6 +113,9 @@ class TwitterExtractor:
     def _start_chrome(self, headless):
         options = Options()
         options.headless = headless
+        port=9222
+        ip=f'127.0.0.1:{port}'
+        options.add_experimental_option("debuggerAddress", ip)
         driver = webdriver.Chrome(options=options)
         driver.get("https://twitter.com")
         return driver
@@ -41,7 +129,8 @@ class TwitterExtractor:
 
     def fetch_tweets(self, page_url, start_date, end_date):
         self.driver.get(page_url)
-        cur_filename = f"data/tweets_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+        cur_filename = f"data/{username}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+        # cur_filename = f"data/tweets_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
 
         # Convert start_date and end_date from "YYYY-MM-DD" to datetime objects
         start_date = datetime.strptime(start_date, "%Y-%m-%d")
@@ -78,9 +167,103 @@ class TwitterExtractor:
             self._delete_first_tweet()
 
         # Save to Excel
-        self._save_to_excel(
-            json_filename=f"{cur_filename}.json", output_filename=f"{cur_filename}.xlsx"
-        )
+        # self._save_to_excel(
+        #     json_filename=f"{cur_filename}.json", output_filename=f"{cur_filename}.xlsx"
+        # )
+        return f"{cur_filename}.json"
+
+    # 获取详情数据:
+    def fetch_tweets_detail(self, filename):
+        #文件是否存在
+        if not os.path.exists(filename):
+            return
+        urls=[]
+        with open(filename) as f:
+            for line in f:
+                row=json.loads(line)
+                urls.append(row['url'])
+                # print(row['url'])
+        print(urls)
+        pages=[]
+        exist_ids=self.get_message_ids()
+        for url in urls:
+            try:
+                #判断数据是否存在
+                tweet_id = re.search(r'/status/(\d+)', url).group(1)
+                if tweet_id in exist_ids:
+                    continue
+
+                self.driver.get(url)
+                time.sleep(5)
+                tweet = self._get_first_tweet()
+                if not tweet:
+                    continue
+                row = self._process_tweet(tweet)     
+                # tweet_id = re.search(r'/status/(\d+)', row['url']).group(1)
+
+                page={
+                    'tweet_id':tweet_id,
+                    'text':row['text'],
+                    'author_name':row['author_name'],
+                    'author_handle':row['author_handle'],
+                    'date':row['date'],
+                    'lang':row['lang'],
+                    'url':row['url'],
+                    'mentioned_urls':row['mentioned_urls'],
+                    'is_retweet':row['is_retweet'],
+                    'media_type':row['media_type'],
+                    'images_urls':row['images_urls'],
+                    'num_reply':row['num_reply'],
+                    'num_retweet':row['num_retweet'],
+                    'num_like':row['num_like'],
+                }
+                pages.append(page)
+            except Exception as e:
+                logger.error("Error on fetch_tweets_detail", e)
+                continue
+        # 保存Notion
+        self._save_to_notion(pages)
+
+    # 保存数据
+    def _save_to_notion(self, pages):
+        try:
+            client=NotionClient()
+            inserted_pages=[]
+            for page in pages:
+                #判断数据是否存在
+                new_page=client.create_page(page)
+                store_page={
+                    "pageId":new_page['id'],
+                    "tweet_id":page['tweet_id']
+                }
+                inserted_pages.append(store_page)
+                print(f"Inserting {page['tweet_id']}...")
+            # Notion数据保存记录
+            notion_path = os.path.join(os.path.dirname(__file__), "data", f'{username}-noiton.json')
+            with open(notion_path, 'a') as f:
+                for i in inserted_pages:
+                    json.dump(i, f)
+                    f.write('\n')
+                f.close()
+            logger.info("NotionClient Success")
+        except Exception as e:
+            logger.error("NotionClient Error", e)
+    
+    def get_message_ids(self):
+        set_message_ids = set()
+        # 判断文件是否存在
+        result_path = os.path.join(os.path.dirname(__file__), "data", f'{username}-noiton.json')
+        if not os.path.exists(result_path):
+            print(f'[文件不存在:{result_path}')
+            return set_message_ids
+        # 读取json文件
+        with open(result_path, 'r') as file:
+            for line in file:
+                obj = json.loads(line)
+                set_message_ids.add(obj['tweet_id'])
+        print(f'[已记录nodeId数量:{len(set_message_ids)}]')
+        return set_message_ids
+
 
     @retry(
         stop=stop_after_attempt(5),
@@ -305,14 +488,57 @@ class TwitterExtractor:
             f"\n\nDone saving to {output_filename}. Total of {len(cur_df)} unique tweets."
         )
 
+def main():
+    global username
+    '''
+    1. 获取到数据是省略的
+    2. 点击详情获取所有数据
+    3. 数据保存到Notion中
+    '''
 
-if __name__ == "__main__":
+    user_list=[
+        'https://twitter.com/dotey/',
+        'https://twitter.com/op7418/',
+        'https://twitter.com/lidangzzz/',
+        'https://twitter.com/vista8/',
+        'https://twitter.com/imxiaohu/',
+        'https://twitter.com/WaytoAGI/',
+        'https://twitter.com/hanqing_me/',
+        'https://twitter.com/jesselaunz/',
+        'https://twitter.com/lewangx/',
+        'https://twitter.com/JefferyTatsuya/',
+        'https://twitter.com/OwenYoungZh/',
+        'https://twitter.com/thinkingjimmy/',
+        'https://twitter.com/oran_ge/',
+        'https://twitter.com/99aico/',
+        'https://twitter.com/Cydiar404/',
+        'https://twitter.com/tangpanqing/',
+        'https://twitter.com/didengshengwu/',
+        'https://twitter.com/BennyLeeBTC/',
+    ]
+    
     scraper = TwitterExtractor()
-    scraper.fetch_tweets(
-        "https://twitter.com/GZhan5/likes",
-        start_date="2024-03-01",
-        end_date="2024-03-05",
-    )  # YYYY-MM-DD format
+    for user in user_list:
+        username = re.search(r'twitter\.com/(\w+)', user).group(1)
+        file_path=scraper.fetch_tweets(
+            user,
+            start_date="2024-03-01",
+            end_date="2024-03-20",
+        )
+        file_path = os.path.join(os.path.dirname(__file__), file_path)
+        scraper.fetch_tweets_detail(filename=file_path)
+    
+if __name__ == "__main__":
+    main()
 
-    # If you just want to export to Excel, you can use the following line
-    # scraper._save_to_excel(json_filename="tweets_2024-02-01_14-30-00.json", output_filename="tweets_2024-02-01_14-30-00.xlsx")
+
+# if __name__ == "__main__":
+#     scraper = TwitterExtractor()
+#     scraper.fetch_tweets(
+#         "https://twitter.com/GZhan5/likes",
+#         start_date="2024-03-01",
+#         end_date="2024-03-05",
+#     )  # YYYY-MM-DD format
+
+#     # If you just want to export to Excel, you can use the following line
+#     # scraper._save_to_excel(json_filename="tweets_2024-02-01_14-30-00.json", output_filename="tweets_2024-02-01_14-30-00.xlsx")
