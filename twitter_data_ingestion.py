@@ -172,6 +172,9 @@ class TwitterExtractor:
         # )
         return f"{cur_filename}.json"
 
+
+
+
     # 获取详情数据:
     def fetch_tweets_detail(self, filename):
         #文件是否存在
@@ -192,7 +195,7 @@ class TwitterExtractor:
                 tweet_id = re.search(r'/status/(\d+)', url).group(1)
                 if tweet_id in exist_ids:
                     continue
-
+                time.sleep(5)
                 self.driver.get(url)
                 time.sleep(5)
                 tweet = self._get_first_tweet()
@@ -223,6 +226,81 @@ class TwitterExtractor:
                 continue
         # 保存Notion
         self._save_to_notion(pages)
+    
+    def fetch_tweets_detail_json(self,exist_ids, filename):
+        #文件是否存在
+        if not os.path.exists(filename):
+            return
+        # urls=[]
+        pages=[]
+        # exist_ids=self.get_message_ids()
+        with open(filename) as f:
+            for line in f:
+                row=json.loads(line)
+                
+                url=row['url']
+                #判断数据是否存在
+                tweet_id = re.search(r'/status/(\d+)', url).group(1)
+                if tweet_id in exist_ids:
+                    continue
+                page={
+                    'tweet_id':tweet_id,
+                    'text':row['text'],
+                    'author_name':row['author_name'],
+                    'author_handle':row['author_handle'],
+                    'date':row['date'],
+                    'lang':row['lang'],
+                    'url':row['url'],
+                    'mentioned_urls':row['mentioned_urls'],
+                    'is_retweet':row['is_retweet'],
+                    'media_type':row['media_type'],
+                    'images_urls':row['images_urls'],
+                    'num_reply':row['num_reply'],
+                    'num_retweet':row['num_retweet'],
+                    'num_like':row['num_like'],
+                }
+                pages.append(page)
+        return pages
+        # print(urls)
+        # pages=[]
+        # exist_ids=self.get_message_ids()
+        # for url in urls:
+        #     try:
+        #         #判断数据是否存在
+        #         tweet_id = re.search(r'/status/(\d+)', url).group(1)
+        #         if tweet_id in exist_ids:
+        #             continue
+        #         time.sleep(5)
+        #         self.driver.get(url)
+        #         time.sleep(5)
+        #         tweet = self._get_first_tweet()
+        #         if not tweet:
+        #             continue
+        #         row = self._process_tweet(tweet)     
+        #         # tweet_id = re.search(r'/status/(\d+)', row['url']).group(1)
+
+        #         page={
+        #             'tweet_id':tweet_id,
+        #             'text':row['text'],
+        #             'author_name':row['author_name'],
+        #             'author_handle':row['author_handle'],
+        #             'date':row['date'],
+        #             'lang':row['lang'],
+        #             'url':row['url'],
+        #             'mentioned_urls':row['mentioned_urls'],
+        #             'is_retweet':row['is_retweet'],
+        #             'media_type':row['media_type'],
+        #             'images_urls':row['images_urls'],
+        #             'num_reply':row['num_reply'],
+        #             'num_retweet':row['num_retweet'],
+        #             'num_like':row['num_like'],
+        #         }
+        #         pages.append(page)
+        #     except Exception as e:
+        #         logger.error("Error on fetch_tweets_detail", e)
+        #         continue
+        # 保存Notion
+        # self._save_to_notion(pages)
 
     # 保存数据
     def _save_to_notion(self, pages):
@@ -230,37 +308,45 @@ class TwitterExtractor:
             client=NotionClient()
             inserted_pages=[]
             for page in pages:
+                try:
                 #判断数据是否存在
-                new_page=client.create_page(page)
-                store_page={
-                    "pageId":new_page['id'],
-                    "tweet_id":page['tweet_id']
-                }
-                inserted_pages.append(store_page)
-                print(f"Inserting {page['tweet_id']}...")
+                    new_page=client.create_page(page)
+                    store_page={
+                        "pageId":new_page['id'],
+                        "tweet_id":page['tweet_id']
+                    }
+                    inserted_pages.append(store_page)
+                    print(f"Inserting {page['tweet_id']}")
+                except Exception as e:
+                    logger.error("NotionClient save page Error", e)
+                    continue
             # Notion数据保存记录
-            notion_path = os.path.join(os.path.dirname(__file__), "data", f'{username}-noiton.json')
+            notion_path = os.path.join(os.path.dirname(__file__), "data", f'twitter-noiton.json')
             with open(notion_path, 'a') as f:
                 for i in inserted_pages:
                     json.dump(i, f)
                     f.write('\n')
                 f.close()
-            logger.info("NotionClient Success")
+            logger.info("NotionClient Save Success")
         except Exception as e:
-            logger.error("NotionClient Error", e)
+            logger.error("NotionClient Save Error", e)
     
     def get_message_ids(self):
         set_message_ids = set()
         # 判断文件是否存在
-        result_path = os.path.join(os.path.dirname(__file__), "data", f'{username}-noiton.json')
+        result_path = os.path.join(os.path.dirname(__file__), "data", f'twitter-noiton.json')
         if not os.path.exists(result_path):
             print(f'[文件不存在:{result_path}')
             return set_message_ids
         # 读取json文件
-        with open(result_path, 'r') as file:
-            for line in file:
-                obj = json.loads(line)
-                set_message_ids.add(obj['tweet_id'])
+        try:
+            with open(result_path, 'r') as file:
+                for line in file:
+                    if len(line)>0:
+                        obj = json.loads(line)
+                        set_message_ids.add(obj['tweet_id'])
+        except Exception as e:
+            logger.error("NotionClient get_message_ids Error", e)
         print(f'[已记录nodeId数量:{len(set_message_ids)}]')
         return set_message_ids
 
@@ -284,6 +370,13 @@ class TwitterExtractor:
             error_message = self.driver.find_elements(
                 By.XPATH, "//span[contains(text(),'Try reloading')]"
             )
+            if error_message:
+                self.driver.refresh()
+                time.sleep(2)
+                error_message = self.driver.find_elements(
+                By.XPATH, "//span[contains(text(),'Try reloading')]"
+            )
+
             if error_message and use_hacky_workaround_for_reloading_issue:
                 logger.info(
                     "Encountered 'Something went wrong. Try reloading.' error.\nTrying to resolve with a hacky workaround (click on another tab and switch back). Note that this is not optimal.\n"
@@ -304,10 +397,15 @@ class TwitterExtractor:
                 )
 
             else:
+                try:
                 # If no error message, assume tweet is present
-                return self.driver.find_element(
-                    By.XPATH, "//article[@data-testid='tweet']"
-                )
+                    return self.driver.find_element(
+                        By.XPATH, "//article[@data-testid='tweet']"
+                    )
+                except Exception as e:
+                    logger.error("Error processing tweet: " + str(e))
+                    return None
+
 
         except TimeoutException:
             logger.error("Timeout waiting for tweet or after clicking 'Retry'")
@@ -315,7 +413,6 @@ class TwitterExtractor:
         except NoSuchElementException:
             logger.error("Could not find tweet or 'Retry' button")
             raise
-
     def _navigate_tabs(self, target_tab="Likes"):
         # Deal with the 'Retry' issue. Not optimal.
         try:
@@ -518,18 +615,27 @@ def main():
     ]
     
     scraper = TwitterExtractor()
+    exist_ids=scraper.get_message_ids()
     for user in user_list:
-        username = re.search(r'twitter\.com/(\w+)', user).group(1)
-        file_path=scraper.fetch_tweets(
-            user,
-            start_date="2024-03-01",
-            end_date="2024-03-20",
-        )
-        file_path = os.path.join(os.path.dirname(__file__), file_path)
-        scraper.fetch_tweets_detail(filename=file_path)
-    
+        try:
+            username = re.search(r'twitter\.com/(\w+)', user).group(1)
+            file_path=scraper.fetch_tweets(
+                user,
+                start_date="2024-03-20",
+                end_date="2024-03-20",
+            )
+            file_path = os.path.join(os.path.dirname(__file__), file_path)
+            pages=scraper.fetch_tweets_detail_json(exist_ids=exist_ids,filename=file_path)
+            if pages is None:
+                continue
+            scraper._save_to_notion(pages)
+        except Exception as e:
+            logger.error('获取数据异常:{e}')
+
+from notion_clean_twitter import main as clean_main
 if __name__ == "__main__":
     main()
+    clean_main()
 
 
 # if __name__ == "__main__":
