@@ -303,9 +303,9 @@ class TwitterExtractor:
         # self._save_to_notion(pages)
 
     # 保存数据
-    def _save_to_notion(self, pages):
+    def _save_to_notion(self,client, pages):
         try:
-            client=NotionClient()
+            # client=NotionClient()
             inserted_pages=[]
             for page in pages:
                 try:
@@ -616,19 +616,20 @@ def main():
     
     scraper = TwitterExtractor()
     exist_ids=scraper.get_message_ids()
+    client=NotionClient()
     for user in user_list:
         try:
             username = re.search(r'twitter\.com/(\w+)', user).group(1)
             file_path=scraper.fetch_tweets(
                 user,
-                start_date="2024-03-20",
+                start_date="2024-03-18",
                 end_date="2024-03-20",
             )
             file_path = os.path.join(os.path.dirname(__file__), file_path)
             pages=scraper.fetch_tweets_detail_json(exist_ids=exist_ids,filename=file_path)
             if pages is None:
                 continue
-            scraper._save_to_notion(pages)
+            scraper._save_to_notion(client=client,pages=pages)
         except Exception as e:
             logger.error('获取数据异常:{e}')
 
