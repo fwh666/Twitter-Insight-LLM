@@ -12,7 +12,21 @@ class notion_client:
         global_notion = Client(auth=global_token)
         global_query_results = global_notion.databases.query(database_id=global_database_id)
         print('开始Notion自动化获取数据...Twitter-Data')
+    '''
+    插入到子页中
+    '''
+    def insert_block(self):
+        # 获取要插入数据的页面
+        blocks=global_notion.blocks
+        blocks.children()
+        pages=global_notion.pages
+        children = global_notion.blocks.children(block_id='d76a06466ea34bfabab68f2e2c8ec2a2')
+        # 在页面中添加一个文本块
+        new_block = children.add_new(type="text")
+        new_block.title = "Your data goes here"
 
+        # 保存更改
+        global_notion.submit_transaction()
     """
     获取所有页面
     """
@@ -71,9 +85,13 @@ class notion_client:
 def main():
     client = notion_client()
     client.get_all_pages_and_duplicate(global_database_id)
+
+def insert_block():
+    client = notion_client()
+    client.insert_block()
+
 if __name__ == '__main__':
     main()
-    # client = notion_client()
-    # client.get_all_pages_and_duplicate(global_database_id)
-
+    # insert_block()
+    
 

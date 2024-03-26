@@ -61,6 +61,13 @@ class NotionClient:
                         }
                     ]
                 },
+                "Tags": {
+                    "multi_select": [
+                        {
+                            "name": "初始化"
+                        }
+                    ]
+                },
                 '昵称new': {
                     'rich_text': [
                         {
@@ -99,7 +106,23 @@ class NotionClient:
                         "start": page['date'],
                     }
                 }
-            }
+            },
+            children=[
+                {
+                    "object": "block",
+                    "type": "paragraph",
+                    "paragraph": {
+                        "rich_text": [
+                            {
+                                "type": "text",
+                                "text": {
+                                    "content": page['text']
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
         )
         return new_page
 
@@ -176,7 +199,7 @@ class TwitterExtractor:
 
 
     # 获取详情数据:
-    def fetch_tweets_detail(self, filename):
+    def fetch_tweets_detail(self, exist_ids, filename):
         #文件是否存在
         if not os.path.exists(filename):
             return
@@ -186,9 +209,10 @@ class TwitterExtractor:
                 row=json.loads(line)
                 urls.append(row['url'])
                 # print(row['url'])
+            f.close()
         print(urls)
         pages=[]
-        exist_ids=self.get_message_ids()
+        # exist_ids=self.get_message_ids()
         for url in urls:
             try:
                 #判断数据是否存在
@@ -221,12 +245,16 @@ class TwitterExtractor:
                     'num_like':row['num_like'],
                 }
                 pages.append(page)
+                self._delete_first_tweet()
             except Exception as e:
                 logger.error("Error on fetch_tweets_detail", e)
                 continue
+        return pages
         # 保存Notion
-        self._save_to_notion(pages)
-    
+        # self._save_to_notion(pages)
+    '''
+    1. 只获取缩略的内容.存储
+    '''
     def fetch_tweets_detail_json(self,exist_ids, filename):
         #文件是否存在
         if not os.path.exists(filename):
@@ -261,46 +289,6 @@ class TwitterExtractor:
                 }
                 pages.append(page)
         return pages
-        # print(urls)
-        # pages=[]
-        # exist_ids=self.get_message_ids()
-        # for url in urls:
-        #     try:
-        #         #判断数据是否存在
-        #         tweet_id = re.search(r'/status/(\d+)', url).group(1)
-        #         if tweet_id in exist_ids:
-        #             continue
-        #         time.sleep(5)
-        #         self.driver.get(url)
-        #         time.sleep(5)
-        #         tweet = self._get_first_tweet()
-        #         if not tweet:
-        #             continue
-        #         row = self._process_tweet(tweet)     
-        #         # tweet_id = re.search(r'/status/(\d+)', row['url']).group(1)
-
-        #         page={
-        #             'tweet_id':tweet_id,
-        #             'text':row['text'],
-        #             'author_name':row['author_name'],
-        #             'author_handle':row['author_handle'],
-        #             'date':row['date'],
-        #             'lang':row['lang'],
-        #             'url':row['url'],
-        #             'mentioned_urls':row['mentioned_urls'],
-        #             'is_retweet':row['is_retweet'],
-        #             'media_type':row['media_type'],
-        #             'images_urls':row['images_urls'],
-        #             'num_reply':row['num_reply'],
-        #             'num_retweet':row['num_retweet'],
-        #             'num_like':row['num_like'],
-        #         }
-        #         pages.append(page)
-        #     except Exception as e:
-        #         logger.error("Error on fetch_tweets_detail", e)
-        #         continue
-        # 保存Notion
-        # self._save_to_notion(pages)
 
     # 保存数据
     def _save_to_notion(self,client, pages):
@@ -347,7 +335,7 @@ class TwitterExtractor:
                         set_message_ids.add(obj['tweet_id'])
         except Exception as e:
             logger.error("NotionClient get_message_ids Error", e)
-        print(f'[已记录nodeId数量:{len(set_message_ids)}]')
+        print(f'[初始化...已记录nodeId数量:{len(set_message_ids)}]')
         return set_message_ids
 
 
@@ -594,24 +582,26 @@ def main():
     '''
 
     user_list=[
-        'https://twitter.com/dotey/',
-        'https://twitter.com/op7418/',
-        'https://twitter.com/lidangzzz/',
-        'https://twitter.com/vista8/',
-        'https://twitter.com/imxiaohu/',
-        'https://twitter.com/WaytoAGI/',
-        'https://twitter.com/hanqing_me/',
-        'https://twitter.com/jesselaunz/',
-        'https://twitter.com/lewangx/',
-        'https://twitter.com/JefferyTatsuya/',
-        'https://twitter.com/OwenYoungZh/',
-        'https://twitter.com/thinkingjimmy/',
-        'https://twitter.com/oran_ge/',
-        'https://twitter.com/99aico/',
-        'https://twitter.com/Cydiar404/',
-        'https://twitter.com/tangpanqing/',
-        'https://twitter.com/didengshengwu/',
-        'https://twitter.com/BennyLeeBTC/',
+        # 'https://twitter.com/dotey/',
+        # 'https://twitter.com/op7418/',
+        # 'https://twitter.com/lidangzzz/',
+        # 'https://twitter.com/vista8/',
+        # 'https://twitter.com/imxiaohu/',
+        # 'https://twitter.com/WaytoAGI/',
+        # 'https://twitter.com/hanqing_me/',
+        # 'https://twitter.com/jesselaunz/',
+        # 'https://twitter.com/lewangx/',
+        # 'https://twitter.com/JefferyTatsuya/',
+        # 'https://twitter.com/OwenYoungZh/',
+        # 'https://twitter.com/thinkingjimmy/',
+        # 'https://twitter.com/oran_ge/',
+        # 'https://twitter.com/99aico/',
+        # 'https://twitter.com/Cydiar404/',
+        # 'https://twitter.com/tangpanqing/',
+        # 'https://twitter.com/didengshengwu/',
+        # 'https://twitter.com/BennyLeeBTC/',
+        'https://twitter.com/Mr_BlackMirror/',
+        # 'https://twitter.com/baoshu88/'
     ]
     
     scraper = TwitterExtractor()
@@ -622,11 +612,14 @@ def main():
             username = re.search(r'twitter\.com/(\w+)', user).group(1)
             file_path=scraper.fetch_tweets(
                 user,
-                start_date="2024-03-18",
-                end_date="2024-03-20",
+                start_date="2024-03-26",
+                end_date="2024-03-30",
             )
             file_path = os.path.join(os.path.dirname(__file__), file_path)
-            pages=scraper.fetch_tweets_detail_json(exist_ids=exist_ids,filename=file_path)
+            if not os.path.exists(file_path):
+                continue
+            pages=scraper.fetch_tweets_detail(exist_ids=exist_ids,filename=file_path)
+            # pages=scraper.fetch_tweets_detail_json(exist_ids=exist_ids,filename=file_path)
             if pages is None:
                 continue
             scraper._save_to_notion(client=client,pages=pages)
@@ -636,7 +629,7 @@ def main():
 from notion_clean_twitter import main as clean_main
 if __name__ == "__main__":
     main()
-    clean_main()
+    # clean_main()
 
 
 # if __name__ == "__main__":
