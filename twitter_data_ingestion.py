@@ -160,10 +160,12 @@ class TwitterExtractor:
         end_date = datetime.strptime(end_date, "%Y-%m-%d")
 
         while True:
+            time.sleep(5)
             tweet = self._get_first_tweet()
             if not tweet:
                 continue
 
+            time.sleep(5)
             row = self._process_tweet(tweet)
             if row["date"]:
                 try:
@@ -225,7 +227,7 @@ class TwitterExtractor:
                 tweet = self._get_first_tweet()
                 if not tweet:
                     continue
-                row = self._process_tweet(tweet)     
+                row = self._process_tweet(tweet)
                 # tweet_id = re.search(r'/status/(\d+)', row['url']).group(1)
 
                 page={
@@ -265,7 +267,7 @@ class TwitterExtractor:
         with open(filename) as f:
             for line in f:
                 row=json.loads(line)
-                
+
                 url=row['url']
                 #判断数据是否存在
                 tweet_id = re.search(r'/status/(\d+)', url).group(1)
@@ -318,7 +320,7 @@ class TwitterExtractor:
             logger.info("NotionClient Save Success")
         except Exception as e:
             logger.error("NotionClient Save Error", e)
-    
+
     def get_message_ids(self):
         set_message_ids = set()
         # 判断文件是否存在
@@ -598,33 +600,39 @@ def main():
         # 'https://twitter.com/99aico/',
         # 'https://twitter.com/Cydiar404/',
         # 'https://twitter.com/tangpanqing/',
-        # 'https://twitter.com/didengshengwu/',
         # 'https://twitter.com/BennyLeeBTC/',
-        'https://twitter.com/Mr_BlackMirror/',
         # 'https://twitter.com/baoshu88/'
+        # 'https://twitter.com/BennyLeeBTC/',
+        # 'https://twitter.com/didengshengwu/',
+        'https://twitter.com/Mr_BlackMirror/',
     ]
-    
+
     scraper = TwitterExtractor()
     exist_ids=scraper.get_message_ids()
     client=NotionClient()
+    # 分开查询详情
     for user in user_list:
         try:
             username = re.search(r'twitter\.com/(\w+)', user).group(1)
             file_path=scraper.fetch_tweets(
                 user,
-                start_date="2024-03-26",
-                end_date="2024-03-30",
+                start_date="2024-04-20",
+                end_date="2024-04-30",
             )
             file_path = os.path.join(os.path.dirname(__file__), file_path)
             if not os.path.exists(file_path):
                 continue
-            pages=scraper.fetch_tweets_detail(exist_ids=exist_ids,filename=file_path)
-            # pages=scraper.fetch_tweets_detail_json(exist_ids=exist_ids,filename=file_path)
+            # 分开查询详情
+            if username in ['didengshengwu','BennyLeeBTC','Mr_BlackMirror']:
+                pages=scraper.fetch_tweets_detail(exist_ids=exist_ids,filename=file_path)
+            else:
+                pages=scraper.fetch_tweets_detail_json(exist_ids=exist_ids,filename=file_path)
             if pages is None:
                 continue
             scraper._save_to_notion(client=client,pages=pages)
         except Exception as e:
             logger.error('获取数据异常:{e}')
+
 
 from notion_clean_twitter import main as clean_main
 if __name__ == "__main__":
