@@ -28,6 +28,9 @@ class TwitterExtractor:
     def _start_chrome(self, headless):
         options = Options()
         options.headless = headless
+        port = 9223
+        ip = f'127.0.0.1:{port}'
+        options.add_experimental_option("debuggerAddress", ip)
         driver = webdriver.Chrome(options=options)
         driver.get("https://twitter.com")
         return driver
@@ -305,14 +308,19 @@ class TwitterExtractor:
             f"\n\nDone saving to {output_filename}. Total of {len(cur_df)} unique tweets."
         )
 
+def main(start_date, end_date,page_url):
+    scraper = TwitterExtractor()
+    # scraper.fetch_tweets(
+    #     "https://twitter.com/ClutchPoints/",
+    #     start_date="2024-04-01",
+    #     end_date="2024-04-30",
+    # )  # YYYY-MM-DD format
+    scraper.fetch_tweets(page_url, start_date, end_date)
+
 
 if __name__ == "__main__":
-    scraper = TwitterExtractor()
-    scraper.fetch_tweets(
-        "https://twitter.com/elonmusk/likes",
-        start_date="2024-03-01",
-        end_date="2024-03-02",
-    )  # YYYY-MM-DD format
+    main()
+
 
     # If you just want to export to Excel, you can use the following line
     # scraper._save_to_excel(json_filename="tweets_2024-02-01_14-30-00.json", output_filename="tweets_2024-02-01_14-30-00.xlsx")
