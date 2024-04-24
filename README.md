@@ -2,15 +2,31 @@
 
 [中文Readme](README_zh.md)
 
-This project enables you to fetch liked tweets from Twitter (using Selenium), save it to JSON and Excel files, and perform initial data analysis and image captions.	
+This project enables you to fetch liked tweets from Twitter (using Selenium), save it to JSON and Excel files, and perform initial data analysis and image captions.
 
-This is part of the initial steps for a larger personal project involving Large Language Models (LLMs). 
+This is part of the initial steps for a larger personal project involving Large Language Models (LLMs).
 Stay tuned for more updates!
-
 
 ### Example of Exported Excel sheets & Visualizations:
 
 ![Sample Images](images/sample_excel_with_data_viz.png)
+
+
+
+## (new!) Experimental Embedding Based Image Search: Search unlabeled images with nartual language. 
+A new free image embedding tool with a supporting frontend that does not require GPU support has been added. (Supports multiple languages, although the results are better in English.)
+
+For example, here are the results for a searchon "black cat" (in Chinese) but you can also searchfor "a group of people in a photo," "workflow graphs," or more abstract concepts like "sadness."
+
+![img](images/image_search_black_cats.png)
+
+How to run:
+
+-First, make sure that the data has already been downloaded; image downloading requires previous Twitter data (including image URLs).
+
+- Run the newly added `download_images` in the notebook.
+  -In the console, run `streamlit run image_search_webapp.py` and follow the prompts to automatically embed images. No need to embed repeatedly.
+
 
 ## Demo Video
 
@@ -85,8 +101,6 @@ The project includes sample output files for reference:
 
 Feel free to explore and modify the code to suit your specific data analysis requirements.
 
-
-
 ## FAQs:
 
 - Will I get banned? Could this affect my account?
@@ -103,10 +117,9 @@ Feel free to explore and modify the code to suit your specific data analysis req
 
 Contributions to this project are welcome. If you find any issues or have suggestions for improvements, please open an issue or submit a pull request.
 
-
 ## Acknowledgements
 
 - Initial structure and parts of the Selenium code inspired by [Twitter-Scrapper](https://github.com/Mostafa-Ehab/Twitter-Scrapper).
-- The image captioning feature is powered by the OpenAI API. You should be able to achieve similar results using Gemini 1.0.
+- The image captioning feature is powered by the OpenAI API. You should be able to achieve similar results using Gemini 1.0 or Claude Haiku.
 
 For any questions or issues, please open an issue in the repository.
