@@ -136,7 +136,7 @@ class TwitterExtractor:
     def _start_chrome(self, headless):
         options = Options()
         options.headless = headless
-        port=9222
+        port=9223
         ip=f'127.0.0.1:{port}'
         options.add_experimental_option("debuggerAddress", ip)
         driver = webdriver.Chrome(options=options)
@@ -574,7 +574,18 @@ class TwitterExtractor:
         logger.info(
             f"\n\nDone saving to {output_filename}. Total of {len(cur_df)} unique tweets."
         )
+# 获取时间
+import calendar
+# import datetime
+def get_time():
+    today = datetime.now().date()
+    # 获取当前月份的最后一天
+    next_month_first = today.replace(day=1) + timedelta(days=32)
+    end_of_month = next_month_first - timedelta(days=next_month_first.day - 1)
 
+    # 格式化月底日期为 "YYYY-MM-DD"
+    formatted_end_of_month = end_of_month.strftime('%Y-%m-%d')
+    return today.strftime('%Y-%m-%d'), formatted_end_of_month
 def main():
     global username
     '''
@@ -583,7 +594,7 @@ def main():
     3. 数据保存到Notion中
     '''
 
-    user_list=[
+    user_list = [
         # 'https://twitter.com/dotey/',
         # 'https://twitter.com/op7418/',
         # 'https://twitter.com/lidangzzz/',
@@ -602,51 +613,54 @@ def main():
         # 'https://twitter.com/tangpanqing/',
         # 'https://twitter.com/BennyLeeBTC/',
         # 'https://twitter.com/baoshu88/'
+        # 思想
         # 'https://twitter.com/BennyLeeBTC/',
         # 'https://twitter.com/didengshengwu/',
-        'https://twitter.com/Mr_BlackMirror/',
+        # 'https://twitter.com/Mr_BlackMirror/',
+        # 体育
+        # 'https://twitter.com/NBA/',
+        'https://twitter.com/ClutchPoints/',
     ]
 
     scraper = TwitterExtractor()
-    exist_ids=scraper.get_message_ids()
-    client=NotionClient()
+    exist_ids = scraper.get_message_ids()
+    client = NotionClient()
+
+    # 获取日期
+    today, lastDay = get_time()
+
     # 分开查询详情
     for user in user_list:
         try:
             username = re.search(r'twitter\.com/(\w+)', user).group(1)
-            file_path=scraper.fetch_tweets(
+            file_path = scraper.fetch_tweets(
                 user,
-                start_date="2024-04-20",
-                end_date="2024-04-30",
+                start_date=today,
+                end_date=lastDay,
             )
+            # file_path = scraper.fetch_tweets(
+            #     user,
+            #     start_date="2024-04-20",
+            #     end_date="2024-04-30",
+            # )
             file_path = os.path.join(os.path.dirname(__file__), file_path)
             if not os.path.exists(file_path):
                 continue
             # 分开查询详情
-            if username in ['didengshengwu','BennyLeeBTC','Mr_BlackMirror']:
-                pages=scraper.fetch_tweets_detail(exist_ids=exist_ids,filename=file_path)
+            if username in ['didengshengwu', 'BennyLeeBTC', 'Mr_BlackMirror']:
+                pages = scraper.fetch_tweets_detail(exist_ids=exist_ids, filename=file_path)
             else:
-                pages=scraper.fetch_tweets_detail_json(exist_ids=exist_ids,filename=file_path)
+                pages = scraper.fetch_tweets_detail_json(exist_ids=exist_ids, filename=file_path)
             if pages is None:
                 continue
-            scraper._save_to_notion(client=client,pages=pages)
+            scraper._save_to_notion(client=client, pages=pages)
         except Exception as e:
             logger.error('获取数据异常:{e}')
 
 
+
 from notion_clean_twitter import main as clean_main
 if __name__ == "__main__":
+    # get_time()
     main()
     # clean_main()
-
-
-# if __name__ == "__main__":
-#     scraper = TwitterExtractor()
-#     scraper.fetch_tweets(
-#         "https://twitter.com/GZhan5/likes",
-#         start_date="2024-03-01",
-#         end_date="2024-03-05",
-#     )  # YYYY-MM-DD format
-
-#     # If you just want to export to Excel, you can use the following line
-#     # scraper._save_to_excel(json_filename="tweets_2024-02-01_14-30-00.json", output_filename="tweets_2024-02-01_14-30-00.xlsx")
