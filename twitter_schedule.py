@@ -4,10 +4,15 @@ from twitter_data_ingestion import main as main_ingestion
 from notion_clean_twitter import main as clean_main
 
 def job():
+    #1. 采集数据
     main_ingestion()
+    # 1.1 清理数据
     clean_main()
+    # 2. 数据保存到Notion
+
     print('[Twitter采集程序结束...]')
     print('[Twitter采集程序运行时间: %s]' % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+    
 
 
 def schedule_job():

@@ -69,7 +69,10 @@ class TwitterExtractor:
                     date = datetime.strptime(row["date"], "%d/%m/%Y")
 
                 if date < start_date:
-                    break
+                    if row['pinned']:
+                        self._delete_first_tweet()
+                        continue
+                    break # 当检索数据的时间小于开始日期,就跳出循环. BUG:但是置顶推文时间小于开始时间会导致直接跳出
                 elif date > end_date:
                     self._delete_first_tweet()
                     continue
@@ -81,9 +84,9 @@ class TwitterExtractor:
             self._delete_first_tweet()
 
         # Save to Excel
-        self._save_to_excel(
-            json_filename=f"{cur_filename}.json", output_filename=f"{cur_filename}.xlsx"
-        )
+        # self._save_to_excel(
+        #     json_filename=f"{cur_filename}.json", output_filename=f"{cur_filename}.xlsx"
+        # )
 
     @retry(
         stop=stop_after_attempt(5),
@@ -173,6 +176,7 @@ class TwitterExtractor:
                     if self._get_media_type(tweet) == "Image"
                     else None
                 ),
+                "pinned": self._get_pinned_flag(tweet),
             }
         except Exception as e:
             logger.error(f"Error processing tweet: {e}")
@@ -271,6 +275,12 @@ class TwitterExtractor:
             images_urls.append(image_element.get_attribute("src"))
         return images_urls
 
+    def _get_pinned_flag(self, tweet):
+        if tweet.find_elements(By.CSS_SELECTOR, "div[data-testid='socialContext']"):
+            return "Pinned"
+        else:
+            return None
+
     def _extract_number_from_aria_label(self, tweet, testid):
         try:
             text = tweet.find_element(
@@ -311,15 +321,17 @@ class TwitterExtractor:
 def main(start_date, end_date,page_url):
     scraper = TwitterExtractor()
     # scraper.fetch_tweets(
-    #     "https://twitter.com/ClutchPoints/",
-    #     start_date="2024-04-01",
+    #     # "https://twitter.com/ClutchPoints/",
+    #     "https://twitter.com/imxiaohu",
+    #     start_date="2024-04-29",
     #     end_date="2024-04-30",
     # )  # YYYY-MM-DD format
+    # # BUG: 如果推文中有置顶推文的时间,小于开始时间,会导致错误,没有json文件生成. 
     scraper.fetch_tweets(page_url, start_date, end_date)
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main('ss','ss','ss')
 
 
     # If you just want to export to Excel, you can use the following line

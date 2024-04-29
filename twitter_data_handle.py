@@ -26,14 +26,14 @@ class NotionClient:
         """
         初始化
         """
-        global global_query_results
+        # global global_query_results
         global global_notion
         global global_database_id
         global_token = "secret_SGSgYlUHk8knQRLcwJr1alzjzVTwXFwrr0UDBawy0Sw"
         global_database_id = "294cc39bf0424a5ca79de50d76e2f6e1"
         global_notion = Client(auth=global_token)
-        global_query_results = global_notion.databases.query(database_id=global_database_id)
-        print('Notion初始化...')
+        # global_query_results = global_notion.databases.query(database_id=global_database_id)
+        print('Notion客户端初始化...')
 
     """
     创建新的页面
@@ -117,7 +117,7 @@ class NotionClient:
                             "name": "文件1",
                             "type": "external",
                             "external": {
-                                "url": page['images_urls'][0] if page['images_urls'] is not None else page['url']
+                                "url": page['images_url'] if page['images_url'] is not None else page['url']
                                 # "url": 'https://pbs.twimg.com/media/GL5a29dXUAAbvoM.jpg'
                             }
                         }
@@ -745,36 +745,6 @@ def get_time():
     return today.strftime('%Y-%m-%d'), formatted_end_of_month
 
 
-def get_user_list():
-    user_list = [
-        # 'https://twitter.com/dotey/',
-        # 'https://twitter.com/op7418/',
-        # 'https://twitter.com/lidangzzz/',
-        # 'https://twitter.com/vista8/',
-        # 'https://twitter.com/imxiaohu/',
-        # 'https://twitter.com/WaytoAGI/',
-        # 'https://twitter.com/hanqing_me/',
-        # 'https://twitter.com/jesselaunz/',
-        # 'https://twitter.com/lewangx/',
-        # 'https://twitter.com/JefferyTatsuya/',
-        # 'https://twitter.com/OwenYoungZh/',
-        # 'https://twitter.com/thinkingjimmy/',
-        # 'https://twitter.com/oran_ge/',
-        # 'https://twitter.com/99aico/',
-        # 'https://twitter.com/Cydiar404/',
-        # 'https://twitter.com/tangpanqing/',
-        # 'https://twitter.com/BennyLeeBTC/',
-        # 'https://twitter.com/baoshu88/'
-        # 思想
-        # 'https://twitter.com/BennyLeeBTC/',
-        # 'https://twitter.com/didengshengwu/',
-        # 'https://twitter.com/Mr_BlackMirror/',
-        # 体育
-        # 'https://twitter.com/NBA/',
-        'https://twitter.com/ClutchPoints/',
-    ]
-    return user_list
-
 
 def get_json_files():
     import glob
@@ -848,34 +818,72 @@ def fetch_tweets_detail_json(exist_ids, filename):
 
 def _save_to_notion(client, pages):
     try:
-        inserted_pages = []
-        for page in pages:
-            try:
-                # 判断数据是否存在
-                new_page = client.create_page(page)
-                store_page = {
-                    "pageId": new_page['id'],
-                    "tweet_id": page['tweet_id']
-                }
-                inserted_pages.append(store_page)
-                print(f"Save Notion:  {page['tweet_id']}")
-            except Exception as e:
-                logger.error(f'NotionClient save page Error:{page}')
-                logger.error("NotionClient save page Error", e)
-                continue
         # Notion数据保存记录
         notion_path = os.path.join(os.path.dirname(__file__), "data", f'twitter-noiton.json')
         with open(notion_path, 'a') as f:
-            for i in inserted_pages:
-                json.dump(i, f)
-                f.write('\n')
+            # for i in inserted_pages:
+            #     json.dump(i, f)
+            #     f.write('\n')
+            # f.close()
+            # inserted_pages = []
+            for page in pages:
+                try:
+                    if 'No media' in page['media_type']:
+                        print('纯文字数据不保存,跳过')
+                        continue
+                    new_page = client.create_page(page)
+                    store_page = {
+                        "pageId": new_page['id'],
+                        "tweet_id": page['tweet_id']
+                    }
+                    json.dump(store_page, f)
+                    f.write('\n')
+                    # inserted_pages.append(store_page)
+                    print(f"Save Notion:  {page['tweet_id']}")
+                except Exception as e:
+                    logger.error(f'NotionClient save page Error:{page}')
+                    logger.error("NotionClient save page Error", e)
+                    continue
             f.close()
         logger.info("NotionClient Save Success")
     except Exception as e:
         logger.error("NotionClient Save Error", e)
 
 
-from twitter_data_ingestion import main as ing_main
+
+def get_user_list():
+    user_list = [
+        # 科技
+        # 'https://twitter.com/dotey/',
+        # 'https://twitter.com/op7418/',
+        # 'https://twitter.com/lidangzzz/',
+        # 'https://twitter.com/vista8/',
+        'https://twitter.com/imxiaohu/',
+        # 'https://twitter.com/WaytoAGI/',
+        # 'https://twitter.com/hanqing_me/',
+        # 'https://twitter.com/jesselaunz/',
+        # 'https://twitter.com/lewangx/',
+        # 'https://twitter.com/JefferyTatsuya/',
+        # 'https://twitter.com/OwenYoungZh/',
+        # 'https://twitter.com/thinkingjimmy/',
+        # 'https://twitter.com/oran_ge/',
+        # 'https://twitter.com/99aico/',
+        # 'https://twitter.com/Cydiar404/',
+        # 'https://twitter.com/tangpanqing/',
+        # 'https://twitter.com/BennyLeeBTC/',
+        # 'https://twitter.com/baoshu88/'
+        # 思想
+        # 'https://twitter.com/BennyLeeBTC/',
+        # 'https://twitter.com/didengshengwu/',
+        # 'https://twitter.com/Mr_BlackMirror/',
+        # 体育
+        # 'https://twitter.com/NBA/',
+        # 'https://twitter.com/ClutchPoints/',
+    ]
+    return user_list
+
+
+from twitter_data_ingestion import main as cj_main
 from notion_clean_twitter import main as clean_main
 from groq_util import groq_api
 from groq_translate_util import groq_translate_api
@@ -883,40 +891,48 @@ from openai_local_util import call_openai_model
 
 
 def main():
-    # 1. 获取时间
+    # 1. 采集数据端
+    # 1.1 获取时间
     today, last_day = get_time()
-    # 2. 获取数据
-    # for user_url in get_user_list():
-    #     ing_main(today, last_day,user_url)
-    # 3 初始化客户端NotionClient
+    # 1.2 传参爬取数据
+    for user_url in get_user_list():
+        cj_main(today, last_day,user_url)
+
+    # 2. 数据处理端
     client = NotionClient()
-    # 3. json数据处理
+    # 2.1 json数据处理
     exist_ids = get_message_ids()
     file_paths = get_json_files()
     for file_path in file_paths:
         pages = fetch_tweets_detail_json(exist_ids=exist_ids, filename=file_path)
         if pages is None:
             continue
-        # 4. 大模型翻译
         for page in pages:
             if 'Image' in page['media_type']:
-                URL = page['images_urls'][0].split("?")[0]
-                page['images_urls'] = f'{URL}.png'
+                for i in page['images_urls']:
+                    URL = i.split("?")[0] #图片数组,获取一个放入Notion中
+                    page['images_url'] = f'{URL}.png'
             if 'Video' in page['media_type']:
-                page['images_urls'] = 'https://pbs.twimg.com/media/GL5a29dXUAAbvoM?format=jpg&name=small'
-            if page['author_name'] in ['NBA', 'ClutchPoints']:
-                time.sleep(3)
-                content_cn = groq_translate_api(page['text'])
-                time.sleep(3)
-                result = groq_api(content_cn)
-                if len(result) > 2:
-                    page['text'] = result
-                else:
-                    page['text'] = content_cn
+                page['images_url'] = 'https://pbs.twimg.com/media/GL5a29dXUAAbvoM.jpg'
+            # 4. 大模型翻译处理
+            # if page['author_name'] in ['NBA', 'ClutchPoints']:
+                # time.sleep(5)
+                # content_cn = groq_translate_api(page['text'])
+                # time.sleep(15)
+                # result = groq_api(content_cn)
+                # if len(result) > 2:
+                #     page['text'] = result
+                # else:
+                #     page['text'] = content_cn
                 # page['text'] = call_openai_model(page['text'])
         _save_to_notion(client=client, pages=pages)
-
+        # 删除文件
+        os.remove(file_path)
+        print(f'[文件删除:{file_path}]')
+    # 3. 数据去重
+    print('[数据去重开始]')
     clean_main()
+    
 
 
 if __name__ == "__main__":

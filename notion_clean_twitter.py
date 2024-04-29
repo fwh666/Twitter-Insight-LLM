@@ -4,14 +4,14 @@ class notion_client:
         """
         初始化
         """
-        global global_query_results
+        # global global_query_results
         global global_notion
         global global_database_id
         global_token = "secret_SGSgYlUHk8knQRLcwJr1alzjzVTwXFwrr0UDBawy0Sw"
         global_database_id = "294cc39bf0424a5ca79de50d76e2f6e1"
         global_notion = Client(auth=global_token)
-        global_query_results = global_notion.databases.query(database_id=global_database_id)
-        print('开始Notion自动化获取数据...Twitter-Data')
+        # global_query_results = global_notion.databases.query(database_id=global_database_id)
+        print('开始Notion自动化清理数据...Twitter-Data')
     '''
     插入到子页中
     '''
@@ -61,6 +61,11 @@ class notion_client:
         except Exception as e:
             print(f'删除失败:{page_id}')
             print(e)
+        global_notion.pages.update(page_id=page_id,isTr=True)
+    def trash_page_content(self, page_id):
+        result = global_notion.pages.update(page_id=page_id, in_trash=True)
+        print(f'回收站成功:{page_id}')
+
     """
     删除重复的页面-保留最新的页面
     """
@@ -76,6 +81,7 @@ class notion_client:
                         if text_value in property_name_set:
                             print(page["id"])
                             self.delete_page_content(page["id"])
+                            # self.trash_page_content(page["id"])
                         else:
                             property_name_set.add(text_value)
 
@@ -86,9 +92,6 @@ def main():
     client = notion_client()
     client.get_all_pages_and_duplicate(global_database_id)
 
-def insert_block():
-    client = notion_client()
-    client.insert_block()
 
 if __name__ == '__main__':
     main()
