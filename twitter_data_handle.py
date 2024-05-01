@@ -739,7 +739,7 @@ def get_time():
     today = datetime.now().date()
     # 获取当前月份的最后一天
     next_month_first = today.replace(day=1) + timedelta(days=32)
-    end_of_month = next_month_first - timedelta(days=next_month_first.day - 1)
+    end_of_month = next_month_first - timedelta(days=next_month_first.day - 3)
     # 格式化月底日期为 "YYYY-MM-DD"
     formatted_end_of_month = end_of_month.strftime('%Y-%m-%d')
     return today.strftime('%Y-%m-%d'), formatted_end_of_month
@@ -893,7 +893,7 @@ from openai_local_util import call_openai_model
 
 def main():
     # 1. 采集数据端
-    # 1.1 获取时间
+    # 1.1 获取时间-三天前时间
     today, last_day = get_time()
     # 1.2 传参爬取数据
     for user_url in get_user_list():

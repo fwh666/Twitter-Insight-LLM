@@ -5,7 +5,10 @@ from twitter_data_handle import main as handle_main
 def job():
     print('[Twitter采集程序开始. 运行时间: %s]' % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
     # 一体化: 采集-保存Notion
-    handle_main()
+    try:
+        handle_main()
+    except Exception as e:
+        print(e)
     print('[Twitter采集程序结束. 运行时间: %s]' % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
     
     

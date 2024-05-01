@@ -61,7 +61,7 @@ class notion_client:
         except Exception as e:
             print(f'删除失败:{page_id}')
             print(e)
-        global_notion.pages.update(page_id=page_id,isTr=True)
+        # global_notion.pages.update(page_id=page_id,isTr=True)
     def trash_page_content(self, page_id):
         result = global_notion.pages.update(page_id=page_id, in_trash=True)
         print(f'回收站成功:{page_id}')
