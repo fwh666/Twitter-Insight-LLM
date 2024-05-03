@@ -12,7 +12,7 @@ import pandas as pd
 from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 import logging
 from config import TWITTER_AUTH_TOKEN
-
+import os
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -44,7 +44,8 @@ class TwitterExtractor:
 
     def fetch_tweets(self, page_url, start_date, end_date):
         self.driver.get(page_url)
-        cur_filename = f"data/tweets_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+        cur_filename = f"tweets_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+        cur_filename = os.path.join(os.path.dirname(__file__), "data", cur_filename)
 
         # Convert start_date and end_date from "YYYY-MM-DD" to datetime objects
         start_date = datetime.strptime(start_date, "%Y-%m-%d")
