@@ -1,16 +1,22 @@
 import schedule
 import time
 from twitter_data_handle import main as handle_main
+from datetime import datetime, timedelta
 
 
 def job():
     print('[Twitter采集程序开始. 运行时间: %s]' % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
     # 一体化: 采集-保存Notion
-    try:
-        handle_main()
-    except Exception as e:
-        print(e)
-    print('[Twitter采集程序结束. 运行时间: %s]' % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+    now = datetime.now()
+    print(f'当前时间:{now.hour}')
+    if 7<= now.hour <= 23:
+        try:
+            handle_main()
+        except Exception as e:
+            print(e)
+        print('[Twitter采集程序结束. 运行时间: %s]' % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+    else:
+        print('[程序暂停. 运行时间: %s]' % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
 
 
 def schedule_job():
