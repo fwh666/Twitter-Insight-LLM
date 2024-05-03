@@ -855,16 +855,26 @@ def get_user_list():
     user_list = [
         # 科技
         'https://twitter.com/dotey/',
+        'https://twitter.com/dotey/likes', #喜欢的也采集
         'https://twitter.com/op7418/',
+        'https://twitter.com/op7418/likes',
         'https://twitter.com/imxiaohu/',
-        'https://twitter.com/WaytoAGI/',
-        'https://twitter.com/jesselaunz/',
-        'https://twitter.com/lewangx/',
+        'https://twitter.com/imxiaohu/likes',
         'https://twitter.com/JefferyTatsuya/',
+        'https://twitter.com/JefferyTatsuya/likes',
+        'https://twitter.com/WaytoAGI/',
+        'https://twitter.com/WaytoAGI/likes',
+        'https://twitter.com/jesselaunz/',
+        'https://twitter.com/jesselaunz/likes',
+        'https://twitter.com/lewangx/',
+        'https://twitter.com/lewangx/likes',
         # 'https://twitter.com/OwenYoungZh/',
         'https://twitter.com/thinkingjimmy/',
+        'https://twitter.com/thinkingjimmy/likes',
         'https://twitter.com/oran_ge/',
+        'https://twitter.com/oran_ge/likes',
         'https://twitter.com/FinanceYF5/',
+        'https://twitter.com/FinanceYF5/likes',
         # 'https://twitter.com/99aico/',
         # 'https://twitter.com/Cydiar404/',
         # 'https://twitter.com/tangpanqing/',
@@ -879,7 +889,11 @@ def get_user_list():
         # 'https://twitter.com/Mr_BlackMirror/',
         # 体育
         # 'https://twitter.com/NBA/',
+        # 'https://twitter.com/NBA/likes', #喜欢的也采集
         # 'https://twitter.com/ClutchPoints/',
+        # 'https://twitter.com/ClutchPoints/likes', #喜欢的也采集
+        # 'https://twitter.com/NBA_China/',
+        # 'https://twitter.com/NBA_China/likes', #喜欢的也采集
     ]
     return user_list
 
