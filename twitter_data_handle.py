@@ -909,6 +909,9 @@ def main():
     # 1. 采集数据端
     # 1.1 获取时间-三天前时间
     today, last_day = get_time()
+    # 手动日期
+    today='2024-05-03'
+    last_day='2024-05-30'
     # 1.2 传参爬取数据
     for user_url in get_user_list():
         cj_main(today, last_day,user_url)
